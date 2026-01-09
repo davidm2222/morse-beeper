@@ -216,6 +216,29 @@
             line-height: 1.8;
         }
 
+        .morse-char {
+            display: inline-block;
+            transition: all 0.2s ease;
+        }
+
+        .morse-char.active {
+            color: var(--accent-amber);
+            text-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        .morse-symbol {
+            display: inline-block;
+            transition: all 0.1s ease;
+        }
+
+        .morse-symbol.playing {
+            color: var(--signal-active);
+            text-shadow: 
+                0 0 15px var(--signal-active),
+                0 0 25px rgba(0, 255, 136, 0.7);
+            transform: scale(1.3);
+        }
+
         .signal-indicator {
             display: flex;
             align-items: center;
@@ -348,8 +371,46 @@
         }
 
         function updateDisplay() {
-            const morse = textToMorse(textInput.value);
-            morseDisplay.textContent = morse || '—';
+            const text = textInput.value;
+            morseDisplay.innerHTML = '';
+            
+            if (!text.trim()) {
+                morseDisplay.textContent = '—';
+                return;
+            }
+
+            const chars = text.toUpperCase().split('');
+            chars.forEach((char, charIndex) => {
+                if (char === ' ') {
+                    const space = document.createElement('span');
+                    space.textContent = '  ';
+                    space.className = 'morse-char';
+                    space.dataset.charIndex = charIndex;
+                    morseDisplay.appendChild(space);
+                } else if (morseCode[char]) {
+                    const charSpan = document.createElement('span');
+                    charSpan.className = 'morse-char';
+                    charSpan.dataset.charIndex = charIndex;
+                    
+                    const symbols = morseCode[char];
+                    symbols.split('').forEach((symbol, symbolIndex) => {
+                        const symbolSpan = document.createElement('span');
+                        symbolSpan.textContent = symbol;
+                        symbolSpan.className = 'morse-symbol';
+                        symbolSpan.dataset.symbolIndex = symbolIndex;
+                        charSpan.appendChild(symbolSpan);
+                    });
+                    
+                    morseDisplay.appendChild(charSpan);
+                    
+                    // Add space after character (except last one)
+                    if (charIndex < chars.length - 1) {
+                        const space = document.createElement('span');
+                        space.textContent = ' ';
+                        morseDisplay.appendChild(space);
+                    }
+                }
+            });
         }
 
         async function playTone(duration) {
@@ -392,7 +453,6 @@
             stopBtn.disabled = false;
             signalText.textContent = 'Transmitting';
 
-            const morse = textToMorse(text);
             const chars = text.toUpperCase().split('');
 
             try {
@@ -400,18 +460,37 @@
                     if (stopRequested) break;
 
                     const char = chars[i];
+                    
+                    // Highlight the current character
+                    const charSpan = morseDisplay.querySelector(`[data-char-index="${i}"]`);
+                    if (charSpan) {
+                        charSpan.classList.add('active');
+                    }
 
                     if (char === ' ') {
                         signalText.textContent = 'Word Gap';
                         await new Promise(resolve => setTimeout(resolve, WORD_GAP));
                     } else if (morseCode[char]) {
                         const symbols = morseCode[char];
+                        const symbolSpans = charSpan ? charSpan.querySelectorAll('.morse-symbol') : [];
+                        
                         for (let j = 0; j < symbols.length; j++) {
                             if (stopRequested) break;
 
                             const symbol = symbols[j];
                             const duration = symbol === '.' ? DOT_DURATION : DASH_DURATION;
+                            
+                            // Highlight the current symbol
+                            if (symbolSpans[j]) {
+                                symbolSpans[j].classList.add('playing');
+                            }
+                            
                             await playTone(duration);
+                            
+                            // Remove highlight from symbol
+                            if (symbolSpans[j]) {
+                                symbolSpans[j].classList.remove('playing');
+                            }
 
                             if (j < symbols.length - 1) {
                                 signalText.textContent = 'Symbol Gap';
@@ -424,8 +503,18 @@
                             await new Promise(resolve => setTimeout(resolve, LETTER_GAP));
                         }
                     }
+                    
+                    // Remove highlight from character
+                    if (charSpan) {
+                        charSpan.classList.remove('active');
+                    }
                 }
             } finally {
+                // Clear all highlights
+                morseDisplay.querySelectorAll('.active, .playing').forEach(el => {
+                    el.classList.remove('active', 'playing');
+                });
+                
                 isPlaying = false;
                 playBtn.disabled = false;
                 stopBtn.disabled = true;
