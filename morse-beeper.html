@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Morse Code Beeper</title>
+    <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0a0e1a;
+            --bg-panel: #1a1f35;
+            --accent-amber: #ff9500;
+            --accent-glow: #ffb84d;
+            --text-primary: #e8e6e3;
+            --text-dim: #8a8989;
+            --border: #2d3548;
+            --signal-active: #00ff88;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier Prime', monospace;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background-image: 
+                repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255, 255, 255, 0.03) 2px, rgba(255, 255, 255, 0.03) 4px);
+        }
+
+        .container {
+            max-width: 700px;
+            width: 100%;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 50px;
+            animation: fadeIn 0.8s ease-out 0.2s both;
+        }
+
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 3.5rem;
+            color: var(--accent-amber);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            text-shadow: 
+                0 0 20px var(--accent-glow),
+                0 0 40px rgba(255, 149, 0, 0.5);
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.9rem;
+            letter-spacing: 0.3em;
+            color: var(--text-dim);
+            text-transform: uppercase;
+        }
+
+        .panel {
+            background: var(--bg-panel);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            padding: 40px;
+            box-shadow: 
+                0 10px 40px rgba(0, 0, 0, 0.5),
+                inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            animation: fadeIn 0.8s ease-out 0.4s both;
+        }
+
+        .input-group {
+            margin-bottom: 30px;
+        }
+
+        label {
+            display: block;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: var(--accent-amber);
+            margin-bottom: 12px;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 16px;
+            background: var(--bg-dark);
+            border: 2px solid var(--border);
+            border-radius: 4px;
+            color: var(--text-primary);
+            font-family: 'Courier Prime', monospace;
+            font-size: 1.1rem;
+            resize: vertical;
+            min-height: 120px;
+            transition: all 0.3s ease;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--accent-amber);
+            box-shadow: 0 0 20px rgba(255, 149, 0, 0.3);
+        }
+
+        textarea::placeholder {
+            color: var(--text-dim);
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        button {
+            flex: 1;
+            padding: 18px;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        button:active::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        #playBtn {
+            background: var(--accent-amber);
+            color: var(--bg-dark);
+            box-shadow: 0 4px 15px rgba(255, 149, 0, 0.4);
+        }
+
+        #playBtn:hover {
+            background: var(--accent-glow);
+            box-shadow: 0 6px 25px rgba(255, 149, 0, 0.6);
+            transform: translateY(-2px);
+        }
+
+        #playBtn:disabled {
+            background: var(--text-dim);
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
+        }
+
+        #stopBtn {
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            border: 2px solid var(--border);
+        }
+
+        #stopBtn:hover:not(:disabled) {
+            border-color: var(--accent-amber);
+            color: var(--accent-amber);
+        }
+
+        #stopBtn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .output-group {
+            margin-top: 30px;
+        }
+
+        .morse-display {
+            background: var(--bg-dark);
+            border: 2px solid var(--border);
+            border-radius: 4px;
+            padding: 20px;
+            min-height: 80px;
+            font-family: 'Courier Prime', monospace;
+            font-size: 1.3rem;
+            letter-spacing: 0.15em;
+            color: var(--text-primary);
+            word-break: break-word;
+            line-height: 1.8;
+        }
+
+        .signal-indicator {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 20px;
+            padding: 15px;
+            background: var(--bg-dark);
+            border: 2px solid var(--border);
+            border-radius: 4px;
+        }
+
+        .signal-light {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--text-dim);
+            transition: all 0.1s ease;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+        }
+
+        .signal-light.active {
+            background: var(--signal-active);
+            box-shadow: 
+                0 0 15px var(--signal-active),
+                0 0 30px rgba(0, 255, 136, 0.5);
+        }
+
+        .signal-text {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.8rem;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--text-dim);
+        }
+
+        .signal-text.active {
+            color: var(--signal-active);
+        }
+
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+
+            .panel {
+                padding: 25px;
+            }
+
+            .controls {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Morse</h1>
+            <p class="subtitle">Code Beeper</p>
+        </header>
+
+        <div class="panel">
+            <div class="input-group">
+                <label for="textInput">Message to Encode</label>
+                <textarea 
+                    id="textInput" 
+                    placeholder="Type your message here..."
+                    spellcheck="false"
+                >Hello World</textarea>
+            </div>
+
+            <div class="controls">
+                <button id="playBtn">▶ Play Morse</button>
+                <button id="stopBtn" disabled>■ Stop</button>
+            </div>
+
+            <div class="output-group">
+                <label>Morse Code</label>
+                <div id="morseDisplay" class="morse-display"></div>
+            </div>
+
+            <div class="signal-indicator">
+                <div id="signalLight" class="signal-light"></div>
+                <div id="signalText" class="signal-text">Signal Ready</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const morseCode = {
+            'A': '.-',    'B': '-...',  'C': '-.-.',  'D': '-..',   'E': '.',
+            'F': '..-.',  'G': '--.',   'H': '....',  'I': '..',    'J': '.---',
+            'K': '-.-',   'L': '.-..',  'M': '--',    'N': '-.',    'O': '---',
+            'P': '.--.',  'Q': '--.-',  'R': '.-.',   'S': '...',   'T': '-',
+            'U': '..-',   'V': '...-',  'W': '.--',   'X': '-..-',  'Y': '-.--',
+            'Z': '--..',
+            '0': '-----', '1': '.----', '2': '..---', '3': '...--', '4': '....-',
+            '5': '.....', '6': '-....', '7': '--...', '8': '---..', '9': '----.',
+            '.': '.-.-.-', ',': '--..--', '?': '..--..', "'": '.----.',
+            '!': '-.-.--', '/': '-..-.', '(': '-.--.', ')': '-.--.-',
+            '&': '.-...', ':': '---...', ';': '-.-.-.', '=': '-...-',
+            '+': '.-.-.', '-': '-....-', '_': '..--.-', '"': '.-..-.',
+            '$': '...-..-', '@': '.--.-.'
+        };
+
+        const textInput = document.getElementById('textInput');
+        const morseDisplay = document.getElementById('morseDisplay');
+        const playBtn = document.getElementById('playBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const signalLight = document.getElementById('signalLight');
+        const signalText = document.getElementById('signalText');
+
+        let audioContext;
+        let isPlaying = false;
+        let stopRequested = false;
+
+        // Timing constants (in milliseconds)
+        const DOT_DURATION = 80;
+        const DASH_DURATION = DOT_DURATION * 3;
+        const SYMBOL_GAP = DOT_DURATION;
+        const LETTER_GAP = DOT_DURATION * 3;
+        const WORD_GAP = DOT_DURATION * 7;
+        const FREQUENCY = 650; // Hz
+
+        function textToMorse(text) {
+            return text.toUpperCase().split('').map(char => {
+                if (char === ' ') return ' ';
+                return morseCode[char] || '';
+            }).join(' ');
+        }
+
+        function updateDisplay() {
+            const morse = textToMorse(textInput.value);
+            morseDisplay.textContent = morse || '—';
+        }
+
+        async function playTone(duration) {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.frequency.value = FREQUENCY;
+            oscillator.type = 'sine';
+
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration / 1000);
+
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + duration / 1000);
+
+            signalLight.classList.add('active');
+            signalText.textContent = 'Transmitting';
+            signalText.classList.add('active');
+
+            await new Promise(resolve => setTimeout(resolve, duration));
+
+            signalLight.classList.remove('active');
+            signalText.classList.remove('active');
+        }
+
+        async function playMorse() {
+            const text = textInput.value;
+            if (!text.trim()) return;
+
+            isPlaying = true;
+            stopRequested = false;
+            playBtn.disabled = true;
+            stopBtn.disabled = false;
+            signalText.textContent = 'Transmitting';
+
+            const morse = textToMorse(text);
+            const chars = text.toUpperCase().split('');
+
+            try {
+                for (let i = 0; i < chars.length; i++) {
+                    if (stopRequested) break;
+
+                    const char = chars[i];
+
+                    if (char === ' ') {
+                        signalText.textContent = 'Word Gap';
+                        await new Promise(resolve => setTimeout(resolve, WORD_GAP));
+                    } else if (morseCode[char]) {
+                        const symbols = morseCode[char];
+                        for (let j = 0; j < symbols.length; j++) {
+                            if (stopRequested) break;
+
+                            const symbol = symbols[j];
+                            const duration = symbol === '.' ? DOT_DURATION : DASH_DURATION;
+                            await playTone(duration);
+
+                            if (j < symbols.length - 1) {
+                                signalText.textContent = 'Symbol Gap';
+                                await new Promise(resolve => setTimeout(resolve, SYMBOL_GAP));
+                            }
+                        }
+
+                        if (i < chars.length - 1 && chars[i + 1] !== ' ') {
+                            signalText.textContent = 'Letter Gap';
+                            await new Promise(resolve => setTimeout(resolve, LETTER_GAP));
+                        }
+                    }
+                }
+            } finally {
+                isPlaying = false;
+                playBtn.disabled = false;
+                stopBtn.disabled = true;
+                signalText.textContent = 'Signal Ready';
+            }
+        }
+
+        function stopMorse() {
+            stopRequested = true;
+            stopBtn.disabled = true;
+        }
+
+        textInput.addEventListener('input', updateDisplay);
+        playBtn.addEventListener('click', playMorse);
+        stopBtn.addEventListener('click', stopMorse);
+
+        // Initial display
+        updateDisplay();
+    </script>
+</body>
+</html>
